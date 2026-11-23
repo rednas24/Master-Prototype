@@ -17,6 +17,7 @@ public class Headlamp : MonoBehaviour
     [Header("Battery")]
     [SerializeField] private float batteryLifeSeconds = 300f;
     [SerializeField, Range(0f, 1f)] private float battery = 1f;
+    [SerializeField] private float swapSeconds = 1.5f;
 
     [Header("Dimming")]
     [SerializeField, Range(0f, 1f)] private float dimBelow = 0.1f;
@@ -38,8 +39,26 @@ public class Headlamp : MonoBehaviour
     private Coroutine flickerRoutine;
 
     public float Battery => battery;
+    public bool IsSwapping { get; private set; }
 
-    public void AddCharge(float amount) => battery = Mathf.Clamp01(battery + amount);
+    public void SwapBattery()
+    {
+        if (!IsSwapping)
+            StartCoroutine(Swap());
+    }
+
+    private IEnumerator Swap()
+    {
+        IsSwapping = true;
+        bool turnOnAfter = lamp.enabled || battery <= 0f;
+        SetOn(false);
+
+        yield return new WaitForSeconds(swapSeconds);
+
+        battery = 1f;
+        SetOn(turnOnAfter);
+        IsSwapping = false;
+    }
 
     private void Awake()
     {
@@ -49,7 +68,8 @@ public class Headlamp : MonoBehaviour
 
     private void Update()
     {
-        if (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame)
+        
+        if (!IsSwapping && Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame)
             SetOn(!lamp.enabled);
 
         if (!lamp.enabled)
